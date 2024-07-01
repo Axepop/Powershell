@@ -1,0 +1,136 @@
+Processes
+
+# Retrieve process information for a specific computer
+Get-WmiObject -ComputerName WA0423AM092271 -Class Win32_Process -Filter "name = 'MSI$'"
+
+# Retrieve name and ProcessId properties for processes on a specific computer
+Get-WmiObject -ComputerName WA0423AM092271 -Class Win32_Process -Property name, ProcessId
+
+Products
+
+# Retrieve Office products from a specific computer
+Get-WmiObject -ComputerName WA0423AC704119 -Class Win32_Product | Where-Object { $_.Name -match "Office" } | Select-Object Name
+
+# Retrieve and sort products by State and Version, format output in a table
+Get-WmiObject -ComputerName WA0423AM049475 -Class Win32_Product | Sort-Object -Property State, Version | Format-Table -Property Name, Version -AutoSize -Wrap
+
+Service
+
+# Retrieve a specific service
+Get-WmiObject -Class Win32_Service -Filter "Name='A'"
+
+Serial Number
+
+# Retrieve BIOS information for a specific computer
+$computerName = Read-Host -Prompt 'Enter the computer name'
+Get-WmiObject -ComputerName $computerName -Class Win32_BIOS
+
+Find Software
+
+# Find Office software on a specific computer and save output to a file
+$computerName = Read-Host -Prompt 'Enter the computer name'
+Get-WmiObject -ComputerName $computerName  -Class Win32_Product | Where-Object { $_.Name -match "Office" } | Out-File c:\scripts\test.txt
+
+Get System Manufacturer Information
+
+# Retrieve computer system information for a specific computer
+$computerName = Read-Host -Prompt 'Enter the computer name'
+Get-WmiObject -Class Win32_ComputerSystem -ComputerName $computerName 
+
+Get Last Logon User
+
+# Retrieve the last logon property for a specific user
+Get-ADUser -Identity $userName -Properties lastLogon | Select-Object Name, lastLogon
+
+Get Last Logon Machine
+
+# Retrieve the last logon date for a specific computer
+# Ensure the Active Directory module is imported
+Import-Module ActiveDirectory
+
+# Prompt the user to enter a computer name
+$computerName = Read-Host -Prompt 'Enter the computer name'
+
+# Output the entered computer name
+Write-Output "You entered: $computerName"
+
+# Example action: Get AD computer information for the specified computer
+try {
+    $computerInfo = Get-ADComputer -Identity $computerName -Properties *
+    Write-Output "AD Computer information for $computerName:"
+    $computerInfo | Format-Table Name, LastLogonDate -AutoSize
+} catch {
+    Write-Output "Failed to retrieve information for $computerName. Please check the computer name and try again."
+}
+
+
+
+
+Last Logon User
+
+# Retrieve the last logon information for a specific user
+Get-ADUser -Identity SaraDavis -Properties LastLogon | Select-Object Name, LastLogon
+
+Find Machine
+
+# Find computers matching a specific pattern and save output to a file
+Get-ADComputer -Filter 'Name -like "*MWS-FP10"' -Properties IPv4Address | Format-Table Name, DNSHostName, IPv4Address -AutoSize | Out-File -FilePath C:\Share\Powershell\FSList.txt
+
+- Get User Email
+
+ # Retrieve email addresses for users in a specific OU
+ # Ensure the Active Directory module is imported
+ Import-Module ActiveDirectory
+
+ # Prompt the user to enter the SearchBase
+ $searchBase = Read-Host -Prompt 'Enter the SearchBase (e.g., "OU=WA-00423,OU=US,OU=NA,DC=fincoad,DC=com")'
+
+ # Output the entered SearchBase
+ Write-Output "You entered: $searchBase"
+
+ # Retrieve and display email addresses for users within the specified SearchBase
+ try {
+     $emails = Get-ADUser -Filter * -SearchBase $searchBase -Properties mail | Select-Object -ExpandProperty mail
+     Write-Output "Email addresses for users in $searchBase:"
+     $emails
+ } catch {
+     Write-Output "Failed to retrieve email addresses for users in $searchBase. Please check the SearchBase and try again."
+ }
+
+Get Users in OU
+
+# Retrieve names and email addresses for users in a specific OU and save to a file
+Get-ADUser -Filter * -SearchBase "OU=WA-00423,OU=US,OU=NA,DC=fincoad,DC=com" | Select-Object Name, EmailAddress | Out-File -FilePath C:\Share\WA0423User.txt
+
+Get Product Activation
+
+# Retrieve product activation details for a specific computer
+Get-WmiObject -ComputerName AZ0151AM094142 -Class Win32_Product | Where-Object { $_.Name -match "2013" } | Get-CimInstance -ClassName SoftwareLicensingProduct -Filter "Description LIKE '%KMSCLIENT%'" | Select-Object ID, Description, LicenseStatus, Name, GenuineStatus
+
+Get Remote MAC Address
+
+powershell
+
+# Retrieve network adapter configuration and MAC address for a specific computer
+Get-WmiObject -ComputerName WA0423AM02379 -Class Win32_NetworkAdapterConfiguration | Select-Object Description, MACAddress
+
+# Retrieve network adapter configuration with specific description
+Get-WmiObject -Class Win32_NetworkAdapterConfiguration -ComputerName WA0423AM02379 | Where-Object { $_.Description -like "Wi-Fi" }
+
+User Group Membership
+
+# Retrieve group membership for a specific user
+Get-ADPrincipalGroupMembership -Identity rr605861 | Select-Object Name
+
+Physical Memory
+
+# Retrieve physical memory information
+Get-CimInstance -ClassName Win32_PhysicalMemory
+
+WiFi Profile Search
+
+# Display WiFi profiles on a remote host
+Invoke-Command -ComputerName hostname -ScriptBlock { netsh wlan show profiles }
+
+# Remove a specific WiFi profile from a remote host
+Invoke-Command -ComputerName hostname -ScriptBlock { netsh wlan delete profile name="Green" }
