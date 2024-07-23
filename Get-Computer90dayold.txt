@@ -1,0 +1,26 @@
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
+# Define the time period (90 days ago)
+$timePeriod = (Get-Date).AddDays(-90)
+
+# Search for computer accounts that have not logged in within the last 90 days
+$inactiveComputers = Get-ADComputer -Filter {LastLogonDate -lt $timePeriod} -Properties LastLogonDate | 
+    Select-Object Name, LastLogonDate
+
+# Export the results to a CSV file
+$exportPath = Read-Host -Prompt 'Input the destination to save file at:'
+$inactiveComputers | Export-Csv -Path $exportPath -NoTypeInformation
+
+# Output the file path for reference
+Write-Output "Inactive computer accounts exported to: $exportPath"
+
+# Prompt for the destination OU
+$destinationOU = Read-Host -Prompt 'Enter the destination OU for inactive computers (e.g., OU=InactiveComputers,DC=domain,DC=com)'
+
+# Move the inactive computers to the specified OU
+foreach ($computer in $inactiveComputers) {
+    $computerDN = (Get-ADComputer -Identity $computer.Name).DistinguishedName
+    Move-ADObject -Identity $computerDN -TargetPath $destinationOU
+    Write-Output "Moved computer: $($computer.Name) to OU: $destinationOU"
+}

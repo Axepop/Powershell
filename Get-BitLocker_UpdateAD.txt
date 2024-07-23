@@ -1,0 +1,55 @@
+# Ensure you run this script with administrative privileges
+
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
+# Function to get BitLocker recovery key from the local machine
+function Get-BitLockerRecoveryKey {
+    $recoveryKeys = Get-BitLockerVolume | Where-Object {$_.KeyProtector -ne $null} | ForEach-Object {
+        $_.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' }
+    }
+    return $recoveryKeys
+}
+
+# Function to update the BitLocker recovery key in AD
+function Update-BitLockerKeyInAD {
+    param (
+        [string]$computerName,
+        [string]$recoveryKey
+    )
+
+    # Get the AD computer object
+    $adComputer = Get-ADComputer -Identity $computerName -Properties msFVE-RecoveryInformation
+
+    if ($adComputer -eq $null) {
+        Write-Output "Computer account not found in AD: $computerName"
+        return
+    }
+
+    # Create a new object to hold the recovery key
+    $recoveryInfo = New-Object PSObject -Property @{
+        'msFVE-RecoveryPassword' = $recoveryKey
+        'msFVE-RecoveryGuid' = [guid]::NewGuid().ToString()
+    }
+
+    # Update the AD computer object with the recovery key
+    Set-ADComputer -Identity $adComputer -Add @{ 'msFVE-RecoveryInformation' = $recoveryInfo }
+
+    Write-Output "Updated BitLocker recovery key for $computerName in AD"
+}
+
+# Get the local computer name
+$localComputerName = $env:COMPUTERNAME
+
+# Get the BitLocker recovery key
+$bitLockerKeys = Get-BitLockerRecoveryKey
+
+if ($bitLockerKeys -eq $null -or $bitLockerKeys.Count -eq 0) {
+    Write-Output "No BitLocker recovery keys found on the local machine."
+    exit
+}
+
+foreach ($key in $bitLockerKeys) {
+    $recoveryPassword = $key.RecoveryPassword
+    Update-BitLockerKeyInAD -computerName $localComputerName -recoveryKey $recoveryPassword
+}
